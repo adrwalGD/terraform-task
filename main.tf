@@ -160,6 +160,20 @@ resource "azurerm_snapshot" "os_image_snap" {
   depends_on          = [azurerm_virtual_machine.base_temp_vm]
 }
 
+# image from snap
+resource "azurerm_image" "img_from_snap" {
+  name                = "img-from-snap"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+
+os_disk {
+  os_type = "Linux"
+  os_state = "Generalized"
+  managed_disk_id = azurerm_managed_disk.disk_from_snap.id
+}
+  depends_on          = [azurerm_managed_disk.disk_from_snap]
+}
+
 resource "azurerm_managed_disk" "disk_from_snap" {
   name                 = "disk-from-snap"
   location             = azurerm_resource_group.rg.location

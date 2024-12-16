@@ -91,6 +91,7 @@ resource "azurerm_network_interface" "temp_nic" {
     name                          = "internal"
     subnet_id                     = azurerm_subnet.subnet.id
     private_ip_address_allocation = "Dynamic"
+    public_ip_address_id = azurerm_public_ip.public_ip.id
   }
 }
 
@@ -150,6 +151,21 @@ resource "azurerm_virtual_machine" "base_temp_vm" {
   }
 }
 
+resource "azurerm_virtual_machine_extension" "vm_script" {
+  name                 = "vm-script"
+  virtual_machine_id   = azurerm_virtual_machine.base_temp_vm.id
+  publisher            = "Microsoft.Azure.Extensions"
+  type                 = "CustomScript"
+  type_handler_version = "2.0"
+  settings             = <<SETTINGS
+    {
+        "script": "${base64encode(file("./script.sh"))}"
+    }
+SETTINGS
+
+  depends_on = [azurerm_virtual_machine.base_temp_vm]
+}
+
 # Create snapshot of temp vm disk
 resource "azurerm_snapshot" "os_image_snap" {
   name                = "os-image-copy-tf"
@@ -157,7 +173,7 @@ resource "azurerm_snapshot" "os_image_snap" {
   resource_group_name = azurerm_resource_group.rg.name
   create_option       = "Copy"
   source_uri          = azurerm_virtual_machine.base_temp_vm.storage_os_disk[0].managed_disk_id
-  depends_on          = [azurerm_virtual_machine.base_temp_vm]
+  depends_on          = [azurerm_virtual_machine.base_temp_vm, azurerm_virtual_machine_extension.vm_script]
 }
 
 # image from snap
@@ -166,12 +182,12 @@ resource "azurerm_image" "img_from_snap" {
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
 
-os_disk {
-  os_type = "Linux"
-  os_state = "Generalized"
-  managed_disk_id = azurerm_managed_disk.disk_from_snap.id
-}
-  depends_on          = [azurerm_managed_disk.disk_from_snap]
+  os_disk {
+    os_type         = "Linux"
+    os_state        = "Generalized"
+    managed_disk_id = azurerm_managed_disk.disk_from_snap.id
+  }
+  depends_on = [azurerm_managed_disk.disk_from_snap]
 }
 
 resource "azurerm_managed_disk" "disk_from_snap" {
@@ -186,39 +202,70 @@ resource "azurerm_managed_disk" "disk_from_snap" {
   os_type              = "Linux"
 }
 
-# 2nd nic
-resource "azurerm_network_interface" "nic2" {
-  name                = "main-nic2"
+#vms from image
+resource "azurerm_linux_virtual_machine_scale_set" "linux_vm_scale_set" {
+  name                = "linux-vm-scale-set"
   resource_group_name = azurerm_resource_group.rg.name
   location            = azurerm_resource_group.rg.location
-
-  ip_configuration {
-    name                          = "internal"
-    subnet_id                     = azurerm_subnet.subnet.id
-    private_ip_address_allocation = "Dynamic"
-    public_ip_address_id          = azurerm_public_ip.public_ip.id
+  sku = "Standard_B1s"
+  instances = 2
+  admin_username = "azureuser"
+  admin_ssh_key {
+    username = "azureuser"
+    public_key = file("./ssh-keys")
   }
+
+  source_image_id = azurerm_image.img_from_snap.id
+
+  os_disk {
+    caching              = "ReadWrite"
+    storage_account_type = "Standard_LRS"
+  }
+
+  network_interface {
+    name    = "nic"
+    primary = true
+    ip_configuration {
+      name      = "internal"
+      subnet_id = azurerm_subnet.subnet.id
+    }
+  }
+
 }
 
-resource "azurerm_virtual_machine" "vm_from_snapshot" {
-  name                  = "vm-from-disk-from-snap"
-  resource_group_name   = azurerm_resource_group.rg.name
-  location              = azurerm_resource_group.rg.location
-  vm_size               = "Standard_B1s"
-  network_interface_ids = [azurerm_network_interface.nic2.id]
+# 2nd nic
+# resource "azurerm_network_interface" "nic2" {
+#   name                = "main-nic2"
+#   resource_group_name = azurerm_resource_group.rg.name
+#   location            = azurerm_resource_group.rg.location
 
-  storage_os_disk {
-    os_type = "Linux"
-    # name    = "os-disk-snaps"
-    name              = azurerm_managed_disk.disk_from_snap.name
-    caching       = "ReadWrite"
-    create_option = "Attach"
-    managed_disk_id   = azurerm_managed_disk.disk_from_snap.id
-    # image_uri = azurerm_virtual_machine.base_temp_vm.storage_os_disk[0].managed_disk_id
-  }
-  depends_on = [ azurerm_managed_disk.disk_from_snap ]
-  # depends_on = [azurerm_virtual_machine.base_temp_vm]
-}
+#   ip_configuration {
+#     name                          = "internal"
+#     subnet_id                     = azurerm_subnet.subnet.id
+#     private_ip_address_allocation = "Dynamic"
+#     public_ip_address_id          = azurerm_public_ip.public_ip.id
+#   }
+# }
+
+# resource "azurerm_virtual_machine" "vm_from_snapshot" {
+#   name                  = "vm-from-disk-from-snap"
+#   resource_group_name   = azurerm_resource_group.rg.name
+#   location              = azurerm_resource_group.rg.location
+#   vm_size               = "Standard_B1s"
+#   network_interface_ids = [azurerm_network_interface.nic2.id]
+
+#   storage_os_disk {
+#     os_type = "Linux"
+#     # name    = "os-disk-snaps"
+#     name              = azurerm_managed_disk.disk_from_snap.name
+#     caching       = "ReadWrite"
+#     create_option = "Attach"
+#     managed_disk_id   = azurerm_managed_disk.disk_from_snap.id
+#     # image_uri = azurerm_virtual_machine.base_temp_vm.storage_os_disk[0].managed_disk_id
+#   }
+#   depends_on = [ azurerm_managed_disk.disk_from_snap ]
+#   # depends_on = [azurerm_virtual_machine.base_temp_vm]
+# }
 
 # resource "azurerm_virtual_machine_extension" "vmscript" {
 #     name                 = "vmscript"

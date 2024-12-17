@@ -51,7 +51,7 @@ module "vm_image" {
   location              = azurerm_resource_group.rg.location
   resource_group_name   = azurerm_resource_group.rg.name
   provision_script_path = "./script.sh"
-  temp_vm_subnet_id = module.network_module.subnet_id
+  temp_vm_subnet_id     = module.network_module.subnet_id
 }
 
 #vms from image
@@ -82,6 +82,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "linux_vm_scale_set" {
       name                                   = "internal"
       subnet_id                              = module.network_module.subnet_id
       load_balancer_backend_address_pool_ids = [azurerm_lb_backend_address_pool.lb_pool.id]
+      primary                                = true
     }
   }
 

@@ -109,11 +109,11 @@ module "network_module" {
 # }
 
 #assicioate nsg with subnet
-resource "azurerm_subnet_network_security_group_association" "nsg_association" {
-  # subnet_id                 = azurerm_subnet.subnet.id
-  subnet_id                 = module.network_module.subnet_id
-  network_security_group_id = module.network_module.nsg_id
-}
+# resource "azurerm_subnet_network_security_group_association" "nsg_association" {
+#   # subnet_id                 = azurerm_subnet.subnet.id
+#   subnet_id                 = module.network_module.subnet_id
+#   network_security_group_id = module.network_module.nsg_id
+# }
 
 
 # -------------------------------- Network Module --------------------------------

@@ -240,9 +240,62 @@ resource "azurerm_linux_virtual_machine_scale_set" "linux_vm_scale_set" {
     ip_configuration {
       name      = "internal"
       subnet_id = azurerm_subnet.subnet.id
+      load_balancer_backend_address_pool_ids = [azurerm_lb_backend_address_pool.lb_pool.id]
     }
   }
 
+}
+
+# Load Balancer public IP
+resource "azurerm_public_ip" "lb_ip" {
+  name                = "lb_ip"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  allocation_method   = "Static"
+  sku = "Standard"
+}
+
+# load balancaer
+resource "azurerm_lb" "lb" {
+  name                = "lb"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  sku                 = "Standard"
+
+  frontend_ip_configuration {
+    name                 = "lb-frontend-ip-conf"
+    public_ip_address_id = azurerm_public_ip.lb_ip.id
+  }
+}
+
+# Define Backend Pool
+resource "azurerm_lb_backend_address_pool" "lb_pool" {
+  name            = "backend-pool"
+  loadbalancer_id = azurerm_lb.lb.id
+}
+
+# Health Probe for Port 80
+resource "azurerm_lb_probe" "lb_probe" {
+  name                = "health-probe"
+  loadbalancer_id     = azurerm_lb.lb.id
+  request_path = "/"
+  protocol            = "Http"
+  port                = 80
+  interval_in_seconds = 5
+  number_of_probes    = 2
+}
+
+# Load Balancer Rule for Port 80
+resource "azurerm_lb_rule" "example" {
+  name                           = "example-lb-rule"
+  loadbalancer_id                = azurerm_lb.lb.id
+  protocol                       = "Tcp"
+  frontend_port                  = 80
+  backend_port                   = 80
+  frontend_ip_configuration_name = azurerm_lb.lb.frontend_ip_configuration[0].name
+  backend_address_pool_ids       = [azurerm_lb_backend_address_pool.lb_pool.id]
+  probe_id                       = azurerm_lb_probe.lb_probe.id
+  idle_timeout_in_minutes        = 5
 }
 
 # 2nd nic

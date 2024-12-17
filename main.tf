@@ -240,6 +240,18 @@ resource "azurerm_linux_virtual_machine_scale_set" "linux_vm_scale_set" {
     }
   }
 
+  extension {
+      name                 = "landing-page-script"
+      publisher            = "Microsoft.Azure.Extensions"
+      type                 = "CustomScript"
+      type_handler_version = "2.0"
+      settings             = <<SETTINGS
+        {
+            "script": "${base64encode(file("./landing-page.sh"))}"
+        }
+    SETTINGS
+  }
+
 }
 
 # Load Balancer public IP

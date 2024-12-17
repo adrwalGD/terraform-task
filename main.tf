@@ -52,6 +52,7 @@ module "vm_image" {
   resource_group_name   = azurerm_resource_group.rg.name
   provision_script_path = "./script.sh"
   temp_vm_subnet_id     = module.network_module.subnet_id
+  regenerate_image      = var.regenerate_image
 }
 
 #vms from image

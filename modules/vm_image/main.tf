@@ -8,6 +8,8 @@ resource "azurerm_network_interface" "temp_nic" {
     subnet_id                     = var.temp_vm_subnet_id
     private_ip_address_allocation = "Dynamic"
   }
+
+  count = var.regenerate_image ? 1 : 0
 }
 
 
@@ -17,7 +19,7 @@ resource "azurerm_virtual_machine" "base_temp_vm" {
   resource_group_name   = var.resource_group_name
   location              = var.location
   vm_size               = "Standard_B1s"
-  network_interface_ids = [azurerm_network_interface.temp_nic.id]
+  network_interface_ids = [azurerm_network_interface.temp_nic[0].id]
 
   storage_os_disk {
     os_type           = "Linux"
@@ -43,11 +45,13 @@ resource "azurerm_virtual_machine" "base_temp_vm" {
   os_profile_linux_config {
     disable_password_authentication = false
   }
+
+  count = var.regenerate_image ? 1 : 0
 }
 
 resource "azurerm_virtual_machine_extension" "vm_script" {
   name                 = "${var.resources_name_prefix}vm-script"
-  virtual_machine_id   = azurerm_virtual_machine.base_temp_vm.id
+  virtual_machine_id   = azurerm_virtual_machine.base_temp_vm[0].id
   publisher            = "Microsoft.Azure.Extensions"
   type                 = "CustomScript"
   type_handler_version = "2.0"
@@ -57,7 +61,8 @@ resource "azurerm_virtual_machine_extension" "vm_script" {
     }
 SETTINGS
 
-  depends_on = [azurerm_virtual_machine.base_temp_vm]
+  count      = var.regenerate_image ? 1 : 0
+  depends_on = [azurerm_virtual_machine.base_temp_vm[0]]
 }
 
 # Create snapshot of temp vm disk
@@ -66,8 +71,10 @@ resource "azurerm_snapshot" "os_image_snap" {
   location            = var.location
   resource_group_name = var.resource_group_name
   create_option       = "Copy"
-  source_uri          = azurerm_virtual_machine.base_temp_vm.storage_os_disk[0].managed_disk_id
-  depends_on          = [azurerm_virtual_machine.base_temp_vm, azurerm_virtual_machine_extension.vm_script]
+  source_uri          = azurerm_virtual_machine.base_temp_vm[0].storage_os_disk[0].managed_disk_id
+
+  count      = var.regenerate_image ? 1 : 0
+  depends_on = [azurerm_virtual_machine.base_temp_vm[0], azurerm_virtual_machine_extension.vm_script[0]]
 }
 
 resource "azurerm_managed_disk" "disk_from_snap" {
@@ -76,10 +83,12 @@ resource "azurerm_managed_disk" "disk_from_snap" {
   resource_group_name  = var.resource_group_name
   storage_account_type = "Standard_LRS"
   create_option        = "Copy"
-  source_resource_id   = azurerm_snapshot.os_image_snap.id
-  depends_on           = [azurerm_snapshot.os_image_snap]
+  source_resource_id   = azurerm_snapshot.os_image_snap[0].id
   hyper_v_generation   = "V1"
   os_type              = "Linux"
+
+  count      = var.regenerate_image ? 1 : 0
+  depends_on = [azurerm_snapshot.os_image_snap[0]]
 }
 
 
@@ -92,7 +101,7 @@ resource "azurerm_image" "img_from_managed_disk" {
   os_disk {
     os_type         = "Linux"
     os_state        = "Generalized"
-    managed_disk_id = azurerm_managed_disk.disk_from_snap.id
+    managed_disk_id = length(azurerm_managed_disk.disk_from_snap) > 0 ? azurerm_managed_disk.disk_from_snap[0].id : null
   }
-  depends_on = [azurerm_managed_disk.disk_from_snap]
+  #   depends_on = [azurerm_managed_disk.disk_from_snap[0]]
 }

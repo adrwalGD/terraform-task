@@ -14,6 +14,12 @@ variable "provision_script_path" {
   type = string
 }
 
+variable "regenerate_image" {
+  type        = bool
+  default     = false
+  description = "Should new image be created"
+}
+
 variable "resources_name_prefix" {
   type    = string
   default = "grid-image-"

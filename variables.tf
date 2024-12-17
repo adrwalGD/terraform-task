@@ -1,3 +1,9 @@
+variable "regenerate_image" {
+  type        = bool
+  default     = false
+  description = "Should new base image be created"
+}
+
 variable "resource_group_name" {
   type        = string
   description = "Name of the resource group"

@@ -19,71 +19,100 @@ resource "azurerm_resource_group" "rg" {
 }
 
 # -------------------------------- Network Module --------------------------------
-#vnet
-resource "azurerm_virtual_network" "vnet" {
-  name                = "vnet"
+# #vnet
+# resource "azurerm_virtual_network" "vnet" {
+#   name                = "vnet"
+#   resource_group_name = azurerm_resource_group.rg.name
+#   location            = azurerm_resource_group.rg.location
+#   address_space       = ["10.0.0.0/16"]
+# }
+
+# #subnet
+# resource "azurerm_subnet" "subnet" {
+#   name                 = "subnet"
+#   resource_group_name  = azurerm_resource_group.rg.name
+#   virtual_network_name = azurerm_virtual_network.vnet.name
+#   address_prefixes     = ["10.0.0.0/24"]
+# }
+
+# #nsg
+# resource "azurerm_network_security_group" "nsg" {
+#   name                = "nsg"
+#   location            = azurerm_resource_group.rg.location
+#   resource_group_name = azurerm_resource_group.rg.name
+# }
+
+# #nsg ssh rule
+# resource "azurerm_network_security_rule" "ssh" {
+#   name                        = "ssh"
+#   priority                    = 1001
+#   direction                   = "Inbound"
+#   access                      = "Allow"
+#   protocol                    = "Tcp"
+#   source_port_range           = "*"
+#   destination_port_range      = "22"
+#   source_address_prefix       = "*"
+#   destination_address_prefix  = "*"
+#   resource_group_name         = azurerm_resource_group.rg.name
+#   network_security_group_name = azurerm_network_security_group.nsg.name
+# }
+
+# #nsg http rule
+# resource "azurerm_network_security_rule" "http" {
+#   name                        = "http"
+#   priority                    = 1002
+#   direction                   = "Inbound"
+#   access                      = "Allow"
+#   protocol                    = "Tcp"
+#   source_port_range           = "*"
+#   destination_port_range      = "80"
+#   source_address_prefix       = "*"
+#   destination_address_prefix  = "*"
+#   resource_group_name         = azurerm_resource_group.rg.name
+#   network_security_group_name = azurerm_network_security_group.nsg.name
+# }
+
+module "network_module" {
+  source              = "./modules/network"
   resource_group_name = azurerm_resource_group.rg.name
   location            = azurerm_resource_group.rg.location
-  address_space       = ["10.0.0.0/16"]
-}
-
-#subnet
-resource "azurerm_subnet" "subnet" {
-  name                 = "subnet"
-  resource_group_name  = azurerm_resource_group.rg.name
-  virtual_network_name = azurerm_virtual_network.vnet.name
-  address_prefixes     = ["10.0.0.0/24"]
-}
-
-#nsg
-resource "azurerm_network_security_group" "nsg" {
-  name                = "nsg"
-  location            = azurerm_resource_group.rg.location
-  resource_group_name = azurerm_resource_group.rg.name
-}
-
-#nsg ssh rule
-resource "azurerm_network_security_rule" "ssh" {
-  name                        = "ssh"
-  priority                    = 1001
-  direction                   = "Inbound"
-  access                      = "Allow"
-  protocol                    = "Tcp"
-  source_port_range           = "*"
-  destination_port_range      = "22"
-  source_address_prefix       = "*"
-  destination_address_prefix  = "*"
-  resource_group_name         = azurerm_resource_group.rg.name
-  network_security_group_name = azurerm_network_security_group.nsg.name
-}
-
-#nsg http rule
-resource "azurerm_network_security_rule" "http" {
-  name                        = "http"
-  priority                    = 1002
-  direction                   = "Inbound"
-  access                      = "Allow"
-  protocol                    = "Tcp"
-  source_port_range           = "*"
-  destination_port_range      = "80"
-  source_address_prefix       = "*"
-  destination_address_prefix  = "*"
-  resource_group_name         = azurerm_resource_group.rg.name
-  network_security_group_name = azurerm_network_security_group.nsg.name
+  nsg_rules = [{
+    name                       = "ssh"
+    priority                   = 1001
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "22"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+    },
+    {
+      name                       = "http"
+      priority                   = 1002
+      direction                  = "Inbound"
+      access                     = "Allow"
+      protocol                   = "Tcp"
+      source_port_range          = "*"
+      destination_port_range     = "80"
+      source_address_prefix      = "*"
+      destination_address_prefix = "*"
+  }]
 }
 
 #public ip
-resource "azurerm_public_ip" "public_ip" {
-  name                = "public_ip"
-  resource_group_name = azurerm_resource_group.rg.name
-  location            = azurerm_resource_group.rg.location
-  allocation_method   = "Static"
-}
+# resource "azurerm_public_ip" "public_ip" {
+#   name                = "public_ip"
+#   resource_group_name = azurerm_resource_group.rg.name
+#   location            = azurerm_resource_group.rg.location
+#   allocation_method   = "Static"
+# }
 
 #assicioate nsg with subnet
 resource "azurerm_subnet_network_security_group_association" "nsg_association" {
-  subnet_id                 = azurerm_subnet.subnet.id
-  network_security_group_id = azurerm_network_security_group.nsg.id
+  # subnet_id                 = azurerm_subnet.subnet.id
+  subnet_id                 = module.network_module.subnet_id
+  network_security_group_id = module.network_module.nsg_id
 }
 
 
@@ -96,9 +125,9 @@ resource "azurerm_network_interface" "temp_nic" {
 
   ip_configuration {
     name                          = "internal"
-    subnet_id                     = azurerm_subnet.subnet.id
+    subnet_id                     = module.network_module.subnet_id
     private_ip_address_allocation = "Dynamic"
-    public_ip_address_id          = azurerm_public_ip.public_ip.id
+    # public_ip_address_id          = azurerm_public_ip.public_ip.id
   }
 }
 
@@ -232,10 +261,10 @@ resource "azurerm_linux_virtual_machine_scale_set" "linux_vm_scale_set" {
   network_interface {
     name                      = "nic"
     primary                   = true
-    network_security_group_id = azurerm_network_security_group.nsg.id
+    network_security_group_id = module.network_module.nsg_id
     ip_configuration {
       name                                   = "internal"
-      subnet_id                              = azurerm_subnet.subnet.id
+      subnet_id                              = module.network_module.subnet_id
       load_balancer_backend_address_pool_ids = [azurerm_lb_backend_address_pool.lb_pool.id]
     }
   }

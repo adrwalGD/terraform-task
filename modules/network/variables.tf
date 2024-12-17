@@ -1,30 +1,40 @@
 variable "resource_group_name" {
-  type    = string
-  default = "grid-terraform"
-}
-
-variable "location" {
-  type    = string
-  default = "westeurope"
-}
-
-variable "allowed_source_ips" {
-  type = list(string)
-}
-
-variable "lb_frontend_port" {
-  type = number
-}
-
-variable "lb_backend_port" {
-  type = number
-}
-
-variable "vmss_subnet_cidr" {
   type = string
 }
 
-variable "prefix" {
+variable "location" {
+  type = string
+}
+
+variable "resources_name_prefix" {
   type    = string
-  default = "gd-tf"
+  default = "grid-network-"
+}
+
+variable "nsg_rules" {
+  description = "A list of network security rules."
+  type = list(object({
+    name                       = string
+    priority                   = number
+    direction                  = string
+    access                     = string
+    protocol                   = string
+    source_port_range          = string
+    destination_port_range     = string
+    source_address_prefix      = string
+    destination_address_prefix = string
+  }))
+  default = [
+    {
+      name                       = "pis-nsg-rule-ssh"
+      priority                   = 1000
+      direction                  = "Inbound"
+      access                     = "Allow"
+      protocol                   = "Tcp"
+      source_port_range          = "*"
+      destination_port_range     = "22"
+      source_address_prefix      = "*"
+      destination_address_prefix = "*"
+    },
+  ]
 }

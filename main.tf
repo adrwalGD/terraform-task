@@ -88,7 +88,7 @@ resource "azurerm_subnet_network_security_group_association" "nsg_association" {
 
 resource "azurerm_network_interface_security_group_association" "nic_nsg" {
   network_security_group_id = azurerm_network_security_group.nsg.id
-  network_interface_id = azurerm_network_interface.temp_nic.id
+  network_interface_id      = azurerm_network_interface.temp_nic.id
 }
 
 # -------------------------------- Network Module --------------------------------
@@ -102,7 +102,7 @@ resource "azurerm_network_interface" "temp_nic" {
     name                          = "internal"
     subnet_id                     = azurerm_subnet.subnet.id
     private_ip_address_allocation = "Dynamic"
-    public_ip_address_id = azurerm_public_ip.public_ip.id
+    public_ip_address_id          = azurerm_public_ip.public_ip.id
   }
 }
 
@@ -218,11 +218,11 @@ resource "azurerm_linux_virtual_machine_scale_set" "linux_vm_scale_set" {
   name                = "linux-vm-scale-set"
   resource_group_name = azurerm_resource_group.rg.name
   location            = azurerm_resource_group.rg.location
-  sku = "Standard_B1s"
-  instances = 2
-  admin_username = "azureuser"
+  sku                 = "Standard_B1s"
+  instances           = 2
+  admin_username      = "azureuser"
   admin_ssh_key {
-    username = "azureuser"
+    username   = "azureuser"
     public_key = file("./ssh-keys")
   }
 
@@ -234,8 +234,8 @@ resource "azurerm_linux_virtual_machine_scale_set" "linux_vm_scale_set" {
   }
 
   network_interface {
-    name    = "nic"
-    primary = true
+    name                      = "nic"
+    primary                   = true
     network_security_group_id = azurerm_network_security_group.nsg.id
     ip_configuration {
       name      = "internal"

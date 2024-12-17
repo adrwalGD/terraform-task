@@ -86,10 +86,6 @@ resource "azurerm_subnet_network_security_group_association" "nsg_association" {
   network_security_group_id = azurerm_network_security_group.nsg.id
 }
 
-resource "azurerm_network_interface_security_group_association" "nic_nsg" {
-  network_security_group_id = azurerm_network_security_group.nsg.id
-  network_interface_id      = azurerm_network_interface.temp_nic.id
-}
 
 # -------------------------------- Network Module --------------------------------
 

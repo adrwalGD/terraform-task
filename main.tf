@@ -100,6 +100,14 @@ module "network_module" {
   }]
 }
 
+module "vm_image" {
+  source                = "./modules/vm_image"
+  location              = azurerm_resource_group.rg.location
+  resource_group_name   = azurerm_resource_group.rg.name
+  provision_script_path = "./script.sh"
+  temp_vm_subnet_id = module.network_module.subnet_id
+}
+
 #public ip
 # resource "azurerm_public_ip" "public_ip" {
 #   name                = "public_ip"
@@ -118,18 +126,18 @@ module "network_module" {
 
 # -------------------------------- Network Module --------------------------------
 
-resource "azurerm_network_interface" "temp_nic" {
-  name                = "main-nic"
-  resource_group_name = azurerm_resource_group.rg.name
-  location            = azurerm_resource_group.rg.location
+# resource "azurerm_network_interface" "temp_nic" {
+#   name                = "main-nic"
+#   resource_group_name = azurerm_resource_group.rg.name
+#   location            = azurerm_resource_group.rg.location
 
-  ip_configuration {
-    name                          = "internal"
-    subnet_id                     = module.network_module.subnet_id
-    private_ip_address_allocation = "Dynamic"
-    # public_ip_address_id          = azurerm_public_ip.public_ip.id
-  }
-}
+#   ip_configuration {
+#     name                          = "internal"
+#     subnet_id                     = module.network_module.subnet_id
+#     private_ip_address_allocation = "Dynamic"
+#     # public_ip_address_id          = azurerm_public_ip.public_ip.id
+#   }
+# }
 
 #temp vm for image
 # resource "azurerm_linux_virtual_machine" "temp_vm" {
@@ -153,90 +161,91 @@ resource "azurerm_network_interface" "temp_nic" {
 #   }
 # }
 
-# Base VM
-resource "azurerm_virtual_machine" "base_temp_vm" {
-  name                  = "base-temp-vm"
-  resource_group_name   = azurerm_resource_group.rg.name
-  location              = azurerm_resource_group.rg.location
-  vm_size               = "Standard_B1s"
-  network_interface_ids = [azurerm_network_interface.temp_nic.id]
+# # Base VM
+# resource "azurerm_virtual_machine" "base_temp_vm" {
+#   name                  = "base-temp-vm"
+#   resource_group_name   = azurerm_resource_group.rg.name
+#   location              = azurerm_resource_group.rg.location
+#   vm_size               = "Standard_B1s"
+#   network_interface_ids = [azurerm_network_interface.temp_nic.id]
 
-  storage_os_disk {
-    os_type           = "Linux"
-    name              = "base-temp-osdisk"
-    caching           = "ReadWrite"
-    create_option     = "FromImage"
-    managed_disk_type = "Standard_LRS"
-  }
+#   storage_os_disk {
+#     os_type           = "Linux"
+#     name              = "base-temp-osdisk"
+#     caching           = "ReadWrite"
+#     create_option     = "FromImage"
+#     managed_disk_type = "Standard_LRS"
+#   }
 
-  storage_image_reference {
-    publisher = "Canonical"
-    offer     = "0001-com-ubuntu-server-focal"
-    sku       = "20_04-lts"
-    version   = "latest"
-  }
+#   storage_image_reference {
+#     publisher = "Canonical"
+#     offer     = "0001-com-ubuntu-server-focal"
+#     sku       = "20_04-lts"
+#     version   = "latest"
+#   }
 
-  os_profile {
-    computer_name  = "tempvm"
-    admin_username = "azureuser"
-    admin_password = "P@ssw0rd1234!"
-  }
+#   os_profile {
+#     computer_name  = "tempvm"
+#     admin_username = "azureuser"
+#     admin_password = "P@ssw0rd1234!"
+#   }
 
-  os_profile_linux_config {
-    disable_password_authentication = false
-  }
-}
+#   os_profile_linux_config {
+#     disable_password_authentication = false
+#   }
+# }
 
-resource "azurerm_virtual_machine_extension" "vm_script" {
-  name                 = "vm-script"
-  virtual_machine_id   = azurerm_virtual_machine.base_temp_vm.id
-  publisher            = "Microsoft.Azure.Extensions"
-  type                 = "CustomScript"
-  type_handler_version = "2.0"
-  settings             = <<SETTINGS
-    {
-        "script": "${base64encode(file("./script.sh"))}"
-    }
-SETTINGS
+# resource "azurerm_virtual_machine_extension" "vm_script" {
+#   name                 = "vm-script"
+#   virtual_machine_id   = azurerm_virtual_machine.base_temp_vm.id
+#   publisher            = "Microsoft.Azure.Extensions"
+#   type                 = "CustomScript"
+#   type_handler_version = "2.0"
+#   settings             = <<SETTINGS
+#     {
+#         "script": "${base64encode(file("./script.sh"))}"
+#     }
+# SETTINGS
 
-  depends_on = [azurerm_virtual_machine.base_temp_vm]
-}
+#   depends_on = [azurerm_virtual_machine.base_temp_vm]
+# }
 
-# Create snapshot of temp vm disk
-resource "azurerm_snapshot" "os_image_snap" {
-  name                = "os-image-copy-tf"
-  location            = azurerm_resource_group.rg.location
-  resource_group_name = azurerm_resource_group.rg.name
-  create_option       = "Copy"
-  source_uri          = azurerm_virtual_machine.base_temp_vm.storage_os_disk[0].managed_disk_id
-  depends_on          = [azurerm_virtual_machine.base_temp_vm, azurerm_virtual_machine_extension.vm_script]
-}
+# # Create snapshot of temp vm disk
+# resource "azurerm_snapshot" "os_image_snap" {
+#   name                = "os-image-copy-tf"
+#   location            = azurerm_resource_group.rg.location
+#   resource_group_name = azurerm_resource_group.rg.name
+#   create_option       = "Copy"
+#   source_uri          = azurerm_virtual_machine.base_temp_vm.storage_os_disk[0].managed_disk_id
+#   depends_on          = [azurerm_virtual_machine.base_temp_vm, azurerm_virtual_machine_extension.vm_script]
+# }
 
-# image from snap
-resource "azurerm_image" "img_from_snap" {
-  name                = "img-from-snap"
-  location            = azurerm_resource_group.rg.location
-  resource_group_name = azurerm_resource_group.rg.name
+# # image from snap
+# resource "azurerm_image" "img_from_snap" {
+#   name                = "img-from-snap"
+#   location            = azurerm_resource_group.rg.location
+#   resource_group_name = azurerm_resource_group.rg.name
 
-  os_disk {
-    os_type         = "Linux"
-    os_state        = "Generalized"
-    managed_disk_id = azurerm_managed_disk.disk_from_snap.id
-  }
-  depends_on = [azurerm_managed_disk.disk_from_snap]
-}
+#   os_disk {
+#     os_type         = "Linux"
+#     os_state        = "Generalized"
+#     managed_disk_id = azurerm_managed_disk.disk_from_snap.id
+#   }
+#   depends_on = [azurerm_managed_disk.disk_from_snap]
+# }
 
-resource "azurerm_managed_disk" "disk_from_snap" {
-  name                 = "disk-from-snap"
-  location             = azurerm_resource_group.rg.location
-  resource_group_name  = azurerm_resource_group.rg.name
-  storage_account_type = "Standard_LRS"
-  create_option        = "Copy"
-  source_resource_id   = azurerm_snapshot.os_image_snap.id
-  depends_on           = [azurerm_snapshot.os_image_snap]
-  hyper_v_generation   = "V1"
-  os_type              = "Linux"
-}
+# resource "azurerm_managed_disk" "disk_from_snap" {
+#   name                 = "disk-from-snap"
+#   location             = azurerm_resource_group.rg.location
+#   resource_group_name  = azurerm_resource_group.rg.name
+#   storage_account_type = "Standard_LRS"
+#   create_option        = "Copy"
+#   source_resource_id   = azurerm_snapshot.os_image_snap.id
+#   depends_on           = [azurerm_snapshot.os_image_snap]
+#   hyper_v_generation   = "V1"
+#   os_type              = "Linux"
+# }
+
 
 #vms from image
 resource "azurerm_linux_virtual_machine_scale_set" "linux_vm_scale_set" {
@@ -251,7 +260,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "linux_vm_scale_set" {
     public_key = file("./ssh-keys")
   }
 
-  source_image_id = azurerm_image.img_from_snap.id
+  source_image_id = module.vm_image.image_id
 
   os_disk {
     caching              = "ReadWrite"

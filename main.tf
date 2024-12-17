@@ -80,6 +80,17 @@ resource "azurerm_public_ip" "public_ip" {
   allocation_method   = "Static"
 }
 
+#assicioate nsg with subnet
+resource "azurerm_subnet_network_security_group_association" "nsg_association" {
+  subnet_id                 = azurerm_subnet.subnet.id
+  network_security_group_id = azurerm_network_security_group.nsg.id
+}
+
+resource "azurerm_network_interface_security_group_association" "nic_nsg" {
+  network_security_group_id = azurerm_network_security_group.nsg.id
+  network_interface_id = azurerm_network_interface.temp_nic.id
+}
+
 # -------------------------------- Network Module --------------------------------
 
 resource "azurerm_network_interface" "temp_nic" {
@@ -225,6 +236,7 @@ resource "azurerm_linux_virtual_machine_scale_set" "linux_vm_scale_set" {
   network_interface {
     name    = "nic"
     primary = true
+    network_security_group_id = azurerm_network_security_group.nsg.id
     ip_configuration {
       name      = "internal"
       subnet_id = azurerm_subnet.subnet.id

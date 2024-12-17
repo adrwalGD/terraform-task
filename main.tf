@@ -238,8 +238,8 @@ resource "azurerm_linux_virtual_machine_scale_set" "linux_vm_scale_set" {
     primary                   = true
     network_security_group_id = azurerm_network_security_group.nsg.id
     ip_configuration {
-      name      = "internal"
-      subnet_id = azurerm_subnet.subnet.id
+      name                                   = "internal"
+      subnet_id                              = azurerm_subnet.subnet.id
       load_balancer_backend_address_pool_ids = [azurerm_lb_backend_address_pool.lb_pool.id]
     }
   }
@@ -252,7 +252,7 @@ resource "azurerm_public_ip" "lb_ip" {
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
   allocation_method   = "Static"
-  sku = "Standard"
+  sku                 = "Standard"
 }
 
 # load balancaer
@@ -278,7 +278,7 @@ resource "azurerm_lb_backend_address_pool" "lb_pool" {
 resource "azurerm_lb_probe" "lb_probe" {
   name                = "health-probe"
   loadbalancer_id     = azurerm_lb.lb.id
-  request_path = "/"
+  request_path        = "/"
   protocol            = "Http"
   port                = 80
   interval_in_seconds = 5

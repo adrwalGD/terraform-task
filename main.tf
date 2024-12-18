@@ -50,7 +50,7 @@ module "vm_image" {
   source                = "./modules/vm_image"
   location              = azurerm_resource_group.rg.location
   resource_group_name   = azurerm_resource_group.rg.name
-  provision_script_path = "./script.sh"
+  provision_script_path = "./scripts/initial.sh"
   temp_vm_subnet_id     = module.network_module.subnet_id
   regenerate_image      = var.regenerate_image
 }
@@ -74,6 +74,6 @@ module "vms_scale_set" {
   image_id              = module.vm_image.image_id
   nsg_id                = module.network_module.nsg_id
   lb_backend_pool_id    = module.load_balancer.backend_pool_id
-  provision_script_path = "./landing-page.sh"
+  provision_script_path = "./scripts/landing-page.sh"
   instances_count       = 2
 }

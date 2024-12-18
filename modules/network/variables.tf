@@ -1,14 +1,17 @@
 variable "resource_group_name" {
-  type = string
+  type        = string
+  description = "Name of the resource group"
 }
 
 variable "location" {
-  type = string
+  type        = string
+  description = "Azure region to deploy"
 }
 
 variable "resources_name_prefix" {
-  type    = string
-  default = "grid-network-"
+  type        = string
+  default     = "grid-network-"
+  description = "A prefix for naming resources."
 }
 
 variable "nsg_rules" {

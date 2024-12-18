@@ -1,4 +1,3 @@
-
 resource "azurerm_network_interface" "temp_nic" {
   name                = "${var.resources_name_prefix}base-vm-temp-nic"
   resource_group_name = var.resource_group_name
@@ -12,8 +11,6 @@ resource "azurerm_network_interface" "temp_nic" {
   count = var.regenerate_image ? 1 : 0
 }
 
-
-# Base VM
 resource "azurerm_virtual_machine" "base_temp_vm" {
   name                  = "${var.resources_name_prefix}base-temp-vm"
   resource_group_name   = var.resource_group_name
@@ -57,7 +54,7 @@ resource "azurerm_virtual_machine_extension" "vm_script" {
   type_handler_version = "2.0"
   settings             = <<SETTINGS
     {
-        "script": "${base64encode(file(var.provision_script_path))}"
+        "script": "${base64encode(var.provision_script_path == "" ? "" : file(var.provision_script_path))}"
     }
 SETTINGS
 
@@ -65,7 +62,6 @@ SETTINGS
   depends_on = [azurerm_virtual_machine.base_temp_vm[0]]
 }
 
-# Create snapshot of temp vm disk
 resource "azurerm_snapshot" "os_image_snap" {
   name                = "${var.resources_name_prefix}base-vm-snapshot"
   location            = var.location
@@ -92,7 +88,6 @@ resource "azurerm_managed_disk" "disk_from_snap" {
 }
 
 
-# image from managed disk
 resource "azurerm_image" "img_from_managed_disk" {
   name                = "${var.resources_name_prefix}base-vm-image"
   location            = var.location
@@ -103,5 +98,4 @@ resource "azurerm_image" "img_from_managed_disk" {
     os_state        = "Generalized"
     managed_disk_id = length(azurerm_managed_disk.disk_from_snap) > 0 ? azurerm_managed_disk.disk_from_snap[0].id : null
   }
-  #   depends_on = [azurerm_managed_disk.disk_from_snap[0]]
 }

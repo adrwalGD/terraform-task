@@ -1,14 +1,17 @@
 variable "resource_group_name" {
-  type = string
+  type        = string
+  description = "Name of the resource group"
 }
 
 variable "location" {
-  type = string
+  type        = string
+  description = "Azure region to deploy"
 }
 
 variable "resources_name_prefix" {
-  type    = string
-  default = "grid-scale-set-"
+  type        = string
+  default     = "grid-scale-set-"
+  description = "A prefix for naming resources."
 }
 
 variable "public_key" {

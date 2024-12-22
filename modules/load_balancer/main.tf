@@ -33,8 +33,8 @@ resource "azurerm_lb_probe" "lb_probe" {
   number_of_probes    = 2
 }
 
-resource "azurerm_lb_rule" "example" {
-  name                           = "${var.resources_name_prefix}example-lb-rule"
+resource "azurerm_lb_rule" "lb_rule" {
+  name                           = "${var.resources_name_prefix}lb-rule"
   loadbalancer_id                = azurerm_lb.lb.id
   protocol                       = "Tcp"
   frontend_port                  = var.lb_frontend_port

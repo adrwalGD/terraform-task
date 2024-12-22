@@ -12,11 +12,12 @@ resource "azurerm_network_interface" "temp_nic" {
 }
 
 resource "azurerm_virtual_machine" "base_temp_vm" {
-  name                  = "${var.resources_name_prefix}base-temp-vm"
-  resource_group_name   = var.resource_group_name
-  location              = var.location
-  vm_size               = "Standard_B1s"
-  network_interface_ids = [azurerm_network_interface.temp_nic[0].id]
+  name                          = "${var.resources_name_prefix}base-temp-vm"
+  resource_group_name           = var.resource_group_name
+  location                      = var.location
+  vm_size                       = "Standard_B1s"
+  network_interface_ids         = [azurerm_network_interface.temp_nic[0].id]
+  delete_os_disk_on_termination = true
 
   storage_os_disk {
     os_type           = "Linux"

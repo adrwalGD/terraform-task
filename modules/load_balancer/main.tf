@@ -1,10 +1,10 @@
-resource "azurerm_public_ip" "lb_ip" {
-  name                = "${var.resources_name_prefix}lb-ip"
-  location            = var.location
-  resource_group_name = var.resource_group_name
-  allocation_method   = "Static"
-  sku                 = "Standard"
-}
+# resource "azurerm_public_ip" "lb_ip" {
+#   name                = "${var.resources_name_prefix}lb-ip"
+#   location            = var.location
+#   resource_group_name = var.resource_group_name
+#   allocation_method   = "Static"
+#   sku                 = "Standard"
+# }
 
 resource "azurerm_lb" "lb" {
   name                = "${var.resources_name_prefix}lb"
@@ -14,7 +14,10 @@ resource "azurerm_lb" "lb" {
 
   frontend_ip_configuration {
     name                 = "${var.resources_name_prefix}lb-frontend-ip-conf"
-    public_ip_address_id = azurerm_public_ip.lb_ip.id
+    # public_ip_address_id = azurerm_public_ip.lb_ip.id
+    private_ip_address = "10.0.0.10"
+    subnet_id = var.subnet_id
+    private_ip_address_allocation = "Static"
   }
 }
 

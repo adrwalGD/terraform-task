@@ -55,6 +55,15 @@ module "vm_image" {
   regenerate_image      = var.regenerate_image
 }
 
+module "firewall" {
+  source = "./modules/firewall"
+  location = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  virtual_network_name = module.network_module.vnet_name
+  load_balancer_ip = module.load_balancer.private_ip
+  resources_subnet_ip = module.network_module.subnet_id
+}
+
 module "load_balancer" {
   source              = "./modules/load_balancer"
   resource_group_name = azurerm_resource_group.rg.name
@@ -63,6 +72,7 @@ module "load_balancer" {
   lb_frontend_port    = 80
   health_check_path   = "/"
   health_check_port   = 80
+  subnet_id = module.network_module.subnet_id
 }
 
 module "vms_scale_set" {

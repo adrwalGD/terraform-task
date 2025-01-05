@@ -30,3 +30,7 @@ variable "lb_backend_port" {
   type    = number
   default = 80
 }
+
+variable "subnet_id" {
+  type = string
+}

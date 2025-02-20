@@ -29,3 +29,15 @@ variable "resources_name_prefix" {
   type    = string
   default = "grid-image-"
 }
+
+variable "vm_admin_username" {
+  type        = string
+  description = "Username for the VM"
+  default     = "azureuser"
+}
+
+variable "vm_admin_password" {
+  type        = string
+  description = "Password for the VM"
+  default     = "P@ssw0rd1234!"
+}

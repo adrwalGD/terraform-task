@@ -19,6 +19,6 @@ variable "resources_subnet_ip" {
 }
 
 variable "load_balancer_ip" {
-    type        = string
-    description = "IP address for the load balancer"
+  type        = string
+  description = "IP address for the load balancer"
 }

@@ -37,8 +37,8 @@ resource "azurerm_firewall" "firewall" {
   name                = "example-firewall"
   location            = var.location
   resource_group_name = var.resource_group_name
-  sku_name = "AZFW_VNet"
-  sku_tier = "Basic"
+  sku_name            = "AZFW_VNet"
+  sku_tier            = "Basic"
   management_ip_configuration {
     name                 = "example-mgmt-ip-config"
     subnet_id            = azurerm_subnet.subnet_fw_mgmt.id
@@ -68,13 +68,13 @@ resource "azurerm_firewall_nat_rule_collection" "example" {
   action              = "Dnat"
 
   rule {
-    name = "testrule"
-    source_addresses = ["*"]
-    destination_ports = ["80"]
+    name                  = "testrule"
+    source_addresses      = ["*"]
+    destination_ports     = ["80"]
     destination_addresses = [azurerm_public_ip.fw_ip.ip_address]
-    translated_port = 80
-    translated_address = var.load_balancer_ip
-    protocols = ["TCP"]
+    translated_port       = 80
+    translated_address    = var.load_balancer_ip
+    protocols             = ["TCP"]
   }
 }
 
